@@ -1,5 +1,6 @@
 import numbers
 import numpy as np
+import scipy
 
 
 def check_random_state(seed):
@@ -83,3 +84,54 @@ def binaryproduct(X, Y):
     except AttributeError:
         pass
     return A % 2
+
+
+def _bitsandnodes(H):
+    """Return bits and nodes of a parity-check matrix H."""
+    if type(H) != scipy.sparse.csr_matrix:
+        bits_indices, bits = np.where(H)
+        nodes_indices, nodes = np.where(H.T)
+    else:
+        bits_indices, bits = scipy.sparse.find(H)[:2]
+        nodes_indices, nodes = scipy.sparse.find(H.T)[:2]
+    bits_histogram = np.bincount(bits_indices)
+    nodes_histogram = np.bincount(nodes_indices)
+
+    return bits_histogram, bits, nodes_histogram, nodes
+
+
+def incode(H, x):
+    """Compute Binary Product of H and x."""
+    return (binaryproduct(H, x) == 0).all()
+
+
+def gausselimination(A, b):
+    """Solve linear system in Z/2Z via Gauss Gauss elimination."""
+    if type(A) == scipy.sparse.csr_matrix:
+        A = A.toarray().copy()
+    else:
+        A = A.copy()
+    b = b.copy()
+    n, k = A.shape
+
+    for j in range(min(k, n)):
+        listedepivots = [i for i in range(j, n) if A[i, j]]
+        if len(listedepivots):
+            pivot = np.min(listedepivots)
+        else:
+            continue
+        if pivot != j:
+            aux = (A[j, :]).copy()
+            A[j, :] = A[pivot, :]
+            A[pivot, :] = aux
+
+            aux = b[j].copy()
+            b[j] = b[pivot]
+            b[pivot] = aux
+
+        for i in range(j+1, n):
+            if A[i, j]:
+                A[i, :] = abs(A[i, :]-A[j, :])
+                b[i] = abs(b[i]-b[j])
+
+    return A, b
