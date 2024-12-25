@@ -4,15 +4,18 @@ import numpy as np
 # from pyldpc import encode
 import ldpc_encode
 import ldpc_decode
+import shared_rate
+import compare
 
 
 def main():
     # 设置命令行参数解析器
     parser = argparse.ArgumentParser(
         description='Generate LDPC H and G matrices.')
-    parser.add_argument('--n', type=int, default=8, help='码字长度，确保 d_c 能整除 n')
+    parser.add_argument('--n', type=int, default=32, help='码字长度，确保 d_c 能整除 n')
     parser.add_argument('--d_v', type=int, default=2, help='每列的 1 的个数')
     parser.add_argument('--d_c', type=int, default=4, help='每行的 1 的个数，必须整除 n')
+    parser.add_argument('--compare', type=bool, default=False, help='是否进行比较')
     args = parser.parse_args()
 
     # 生成 H 和 G 矩阵
@@ -21,8 +24,18 @@ def main():
     print("H Matrix:\n", H)
     print("G Matrix:\n", G)
 
-    # 随机生成消息
+    # 计算码率
     k = G.shape[1]  # 信息位长度
+    n = G.shape[0]  # 码字长度
+    shared_rate.rate_LDPC = k / n
+    print(f"LDPC码的码率: {shared_rate.rate_LDPC:.2f}")
+    if args.compare:
+        compare.compare()
+
+    # rate_LDPC = k / n
+    # print(f"LDPC码的码率: {rate_LDPC:.2f}")
+
+    # 随机生成消息
     message = np.random.randint(2, size=k)
     print("原始消息:\n", message)
 
